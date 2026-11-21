@@ -355,7 +355,10 @@ footer p{color:var(--muted);max-width:28em}
 @media (prefers-reduced-motion:reduce){.review-card.new{animation:none}}
 .rv-empty{grid-column:1/-1;padding:32px 20px;text-align:center;color:var(--muted);background:var(--surface);border:1px dashed var(--line);border-radius:16px}
 .rv-more-wrap{grid-column:1/-1;text-align:center}
-.rv-more-wrap button.btn{font:inherit;font-weight:600;cursor:pointer}
+.rv-dots{display:inline-flex;align-items:center;justify-content:center;min-width:76px;height:46px;padding:0 24px;border:2px solid var(--line);border-radius:999px;background:var(--surface);color:var(--ink);font-size:1.05rem;letter-spacing:.14em;text-decoration:none;transition:all .3s ease}
+@media (hover:hover){.rv-dots:hover{translate:0 -6px;border-color:var(--green);box-shadow:0 12px 26px -10px color-mix(in srgb,var(--green) 50%,transparent)}}
+.rv-dots:active{translate:0 -6px;border-color:var(--green)}
+.rv-cap{margin-top:10px;color:var(--muted);font-size:.9rem}
 .rv-actions button.btn:disabled{opacity:.65;cursor:wait}
 .rv-sum,.review-card{transition:all .3s ease}
 @media (hover:hover){.rv-sum:hover,.review-card:hover{translate:0 -6px}}
@@ -874,7 +877,7 @@ footer p{color:var(--muted);max-width:28em}
 <script>
 (function(){
   var list=document.getElementById("rv-list");if(!list)return;
-  var PAGE=6,shown=PAGE,reviews=[];
+  var LIMIT=4,reviews=[];   /* how many of the newest reviews to show on this page */
   var STAR='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.9-4.8 4.6 1.2 6.6L12 17.6 6.1 20.7l1.2-6.6L2.5 9.5l6.6-.9z"/></svg>';
   var ROW=STAR+STAR+STAR+STAR+STAR;
   function stars(v){
@@ -912,14 +915,17 @@ footer p{color:var(--muted);max-width:28em}
   function render(newestIsNew){
     list.replaceChildren();
     if(!reviews.length){list.appendChild(note("No reviews yet. Be the first to leave one below."));return}
-    reviews.slice(0,shown).forEach(function(x,i){list.appendChild(card(x,newestIsNew&&i===0))});
-    if(reviews.length>shown){
+    reviews.slice(0,LIMIT).forEach(function(x,i){list.appendChild(card(x,newestIsNew&&i===0))});
+    if(reviews.length>LIMIT){
       var w=document.createElement("div");w.className="rv-more-wrap";
-      var b=document.createElement("button");b.type="button";b.className="btn ghost";b.textContent="Show more reviews";
-      b.addEventListener("click",function(){shown+=PAGE;render(false)});
-      w.appendChild(b);list.appendChild(w);
+      var m=document.createElement("a");m.className="rv-dots";m.href="reviews.html";m.title="View all reviews";
+      m.setAttribute("aria-label","View all "+reviews.length+" reviews");m.textContent="\u2022\u2022\u2022";
+      var cap=document.createElement("p");cap.className="rv-cap";
+      cap.textContent="Showing the latest "+LIMIT+" of "+reviews.length+" reviews";
+      w.appendChild(m);w.appendChild(cap);list.appendChild(w);
     }
   }
+
   async function load(){
     var c=getSupabase();
     if(!c){list.replaceChildren(note("Reviews could not be loaded right now."));summary();document.getElementById("rv-count").textContent="";return}
