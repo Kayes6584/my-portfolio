@@ -347,6 +347,9 @@ footer p{color:var(--muted);max-width:28em}
 .rv-err{color:#c0392b;font-weight:500}
 .rv-done{margin-top:22px;padding:16px 18px;border-radius:12px;background:var(--green-soft);color:var(--ink)}
 .rv-done a{color:var(--green);font-weight:600}
+.rv-form.is-locked form{opacity:.55}
+.rv-form.is-locked .pick label,.rv-form.is-locked .rv-actions{pointer-events:none}
+.rv-form.is-locked input,.rv-form.is-locked textarea,.rv-form.is-locked button{cursor:not-allowed}
 @media (max-width:860px){#reviews .rv-top{grid-template-columns:1fr}}
 @media (max-width:640px){.rv-grid{grid-template-columns:1fr}.rv-form{padding:22px}.pick label svg{width:32px;height:32px}}
 @media (prefers-reduced-motion:reduce){.review-card.new{animation:none}}
@@ -690,6 +693,7 @@ footer p{color:var(--muted);max-width:28em}
             <span class="rv-err" id="rv-err" role="alert" hidden></span>
           </div>
         </form>
+        <div class="rv-done" id="rv-locked" role="status" hidden>You have already submitted a review. Thank you!</div>
         <div class="rv-done" id="rv-done" role="status" hidden>
           <b>Thank you, <span id="rv-who"></span>!</b> Your review has been saved and now shows above for everyone.
         </div>
@@ -933,9 +937,24 @@ footer p{color:var(--muted);max-width:28em}
   form.addEventListener("change",function(e){
     if(e.target.name==="rating")document.getElementById("pick-text").textContent=e.target.value+" of 5 – "+LABELS[+e.target.value];
   });
+  /* ===== one review per visitor (remembered in this browser) ===== */
+  var FLAG="stm-review-submitted",locked=false,submittedNow=false;
+  function hasSubmitted(){try{return localStorage.getItem(FLAG)==="1"}catch(e){return false}}
+  function remember(){try{localStorage.setItem(FLAG,"1")}catch(e){}}
+  function lock(showNote){
+    locked=true;
+    form.querySelectorAll("input,textarea,button").forEach(function(el){el.disabled=true});
+    document.getElementById("rv-submit").textContent="Review submitted";
+    form.closest(".rv-form").classList.add("is-locked");
+    if(showNote)document.getElementById("rv-locked").hidden=false;
+  }
+  window.addEventListener("storage",function(e){if(e.key===FLAG&&e.newValue==="1"&&!locked)lock(true)});
   function fail(m){err.textContent=m;err.hidden=false}
   form.addEventListener("submit",async function(e){
-    e.preventDefault();err.hidden=true;done.hidden=true;
+    e.preventDefault();err.hidden=true;
+    if(locked)return;
+    if(hasSubmitted()){lock(true);return}
+    done.hidden=true;
     var sel=form.querySelector("input[name=rating]:checked");
     var name=document.getElementById("rv-name").value.trim(),text=document.getElementById("rv-text").value.trim();
     if(!sel)return fail("Please choose a star rating.");
@@ -949,18 +968,21 @@ footer p{color:var(--muted);max-width:28em}
         var res=await c.from("reviews").insert({reviewer_name:name,rating:+sel.value,feedback:text}).select("id,created_at,reviewer_name,rating,feedback").single();
         if(res.error)throw res.error;
         reviews.unshift(res.data);render(true);summary();
+        remember();submittedNow=true;
       }
       document.getElementById("rv-who").textContent=name;
       done.hidden=false;
       form.reset();document.getElementById("pick-text").textContent="Select 1 to 5 stars";
+      if(submittedNow)lock(false);
       list.scrollIntoView({behavior:"smooth",block:"nearest"});
     }catch(x){
       console.error("review insert failed:",x);
       fail("Sorry, your review could not be saved. Please try again in a moment.");
     }finally{
-      btn.disabled=false;btn.textContent=label;
+      if(!locked){btn.disabled=false;btn.textContent=label}
     }
   });
+  if(hasSubmitted())lock(true);
 })();
 </script>
 <script>
