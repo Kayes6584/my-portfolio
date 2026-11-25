@@ -59,6 +59,11 @@ a{color:inherit}
 @media (hover:hover){.btn:hover{translate:0 -6px;border-color:var(--green);box-shadow:0 12px 26px -10px color-mix(in srgb,var(--green) 50%,transparent)}}
 .btn:active{translate:0 -6px}
 
+/* navbar turns translucent once the page is scrolled */
+.top{transition:background-color .35s ease,box-shadow .35s ease,backdrop-filter .35s ease,-webkit-backdrop-filter .35s ease}
+.top.scrolled{background-color:rgba(18,32,26,.62);-webkit-backdrop-filter:blur(14px) saturate(1.3);backdrop-filter:blur(14px) saturate(1.3);box-shadow:0 10px 30px -18px rgba(0,0,0,.6)}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.top.scrolled{background-color:rgba(18,32,26,.94)}}
+@media (prefers-reduced-transparency:reduce){.top.scrolled{background-color:#0b1411;-webkit-backdrop-filter:none;backdrop-filter:none}}
 /* page */
 .hero{padding:56px 0 8px}
 .hero h1{font-size:clamp(2rem,5vw,3.1rem);font-weight:800}
@@ -102,6 +107,27 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 footer a{text-decoration:none;font-weight:600;color:var(--green)}
 @media (max-width:860px){.rv-top{grid-template-columns:1fr}.rv-sum{position:static}.hero{padding-top:36px}}
 @media (max-width:640px){.menu{width:100%;justify-content:space-between;gap:4px 12px}.brand img{height:40px}}
+/* mobile navigation: lighter, more compact, single line */
+@media (max-width:768px){
+  .top .bar{padding-left:16px;padding-right:16px}
+  .menu{flex-wrap:nowrap;gap:0 clamp(8px,2.8vw,18px)}
+  .nav-link{font-weight:400;font-size:clamp(.8rem,3.7vw,.93rem);white-space:nowrap;gap:4px}
+  .chev{width:12px;height:12px}
+}
+
+/* slimmer mobile header: smaller logo, lighter and more compact links */
+@media (max-width:768px){
+  .top .bar{padding-top:6px;padding-bottom:6px;gap:0 12px}
+  .brand img{height:28px}
+  .nav-link{font-size:clamp(.76rem,3.2vw,.85rem);padding:7px 0}
+  .nav-link.active::after{bottom:1px}
+  .menu{width:auto;gap:0 clamp(8px,2.4vw,16px)}
+  .top nav{width:auto;margin-left:auto}
+}
+@media (max-width:389px){
+  .top nav{width:100%;margin-left:0}
+  .menu{width:100%;justify-content:space-between}
+}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
 </style>
 </head>
@@ -224,6 +250,15 @@ var SUPABASE_KEY="sb_publishable_2D41bAtgqOqKxl0n80LBMg_3rKJDyDl";
     reviews=res.data||[];render();summary();
   }
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",load);else load();
+})();
+</script>
+<script>
+(function(){
+  var bar=document.querySelector("header.top");if(!bar)return;
+  var ticking=false;
+  function update(){ticking=false;bar.classList.toggle("scrolled",(window.scrollY||document.documentElement.scrollTop)>8)}
+  window.addEventListener("scroll",function(){if(!ticking){ticking=true;requestAnimationFrame(update)}},{passive:true});
+  update();
 })();
 </script>
 </body>
