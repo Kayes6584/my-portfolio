@@ -118,6 +118,31 @@ input:focus,textarea:focus{outline:2px solid var(--green);outline-offset:1px;bor
 .stat.static:hover{translate:none;border-color:var(--line)}
 .rstars{color:#f5b301;letter-spacing:2px;font-size:1.05rem;margin-top:10px;display:block}
 .rstars i{font-style:normal;color:var(--line)}
+/* proof manager */
+.pf-form{margin-top:24px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:24px}
+.pf-form h2{font-size:1.35rem}
+.pf-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 18px}
+.pf-grid .field.full{grid-column:1/-1}
+.pf-form input[type=text],.pf-form input[type=url],.pf-form input[type=date],.pf-form select{width:100%;font:inherit;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:11px 13px}
+.pf-form select:focus{outline:2px solid var(--green);outline-offset:1px;border-color:var(--green)}
+.pf-form textarea{min-height:110px;resize:vertical}
+.pf-img{display:flex;gap:16px;align-items:flex-start}
+.pf-thumb{flex:none;width:120px;aspect-ratio:16/10;display:grid;place-items:center;overflow:hidden;border:1px dashed var(--line);border-radius:10px;background:var(--paper);color:var(--muted);font-size:.8rem;text-align:center}
+.pf-thumb img{display:block;width:100%;height:100%;object-fit:cover}
+.pf-img-fields{flex:1;min-width:0;display:grid;gap:10px}
+.pf-upload{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.pf-upload input[type=file]{max-width:100%;font:inherit;font-size:.9rem}
+.pf-hint{color:var(--muted);font-size:.85rem}
+.pf-hint.bad{color:var(--danger)}
+.pf-sub{margin-top:34px;font-size:1.3rem}
+.pf-item{display:flex;gap:16px;align-items:flex-start}
+.pf-item .pf-thumb{width:140px}
+.pf-main{flex:1;min-width:0}
+.pf-main h3{font-size:1.15rem}
+.pf-main p{margin-top:6px;color:var(--muted);overflow-wrap:anywhere}
+.pf-main .chips{margin-top:10px}
+.pf-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+@media (max-width:640px){.pf-grid{grid-template-columns:1fr}.pf-img{flex-direction:column;align-items:stretch}.pf-item{flex-direction:column}.pf-item .pf-thumb{width:100%}}
 /* confirm dialog + toast */
 dialog{border:1px solid var(--line);border-radius:16px;background:var(--surface);color:var(--ink);padding:26px;width:min(420px,calc(100% - 32px))}
 dialog::backdrop{background:rgba(5,10,8,.6);backdrop-filter:blur(3px)}
@@ -178,6 +203,7 @@ dialog .acts{justify-content:flex-end;margin-top:22px}
     <div class="tabs" role="tablist" aria-label="Dashboard sections">
       <button class="tab" type="button" role="tab" data-tab="requests" aria-selected="true">Requests<span id="tab-n-req">0</span></button>
       <button class="tab" type="button" role="tab" data-tab="reviews" aria-selected="false">Reviews<span id="tab-n-rev">0</span></button>
+      <button class="tab" type="button" role="tab" data-tab="proof" aria-selected="false">Proof<span id="tab-n-pf">0</span></button>
     </div>
     <section id="panel-requests" role="tabpanel">
     <div class="stats" id="stats">
@@ -196,6 +222,65 @@ dialog .acts{justify-content:flex-end;margin-top:22px}
         <div class="stat static"><b id="n-avg">–</b><span>Average rating</span></div>
       </div>
       <div class="list" id="rv-list-admin" aria-live="polite"></div>
+    </section>
+    <section id="panel-proof" role="tabpanel" hidden>
+      <form class="pf-form" id="pf-form" novalidate>
+        <h2 id="pf-heading">Add a proof item</h2>
+        <div class="pf-grid">
+          <div class="field full">
+            <label for="pf-title">Title *</label>
+            <input id="pf-title" type="text" maxlength="120" placeholder="Project or work title">
+          </div>
+          <div class="field">
+            <label for="pf-cat">Category *</label>
+            <select id="pf-cat">
+              <option>Website</option>
+              <option>App</option>
+              <option>On-Page SEO</option>
+              <option>Excel &amp; Data</option>
+              <option>Word &amp; Documents</option>
+              <option>Content</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="pf-date">Date (optional)</label>
+            <input id="pf-date" type="date">
+          </div>
+          <div class="field full">
+            <label for="pf-desc">Short description *</label>
+            <textarea id="pf-desc" maxlength="600" placeholder="What you built or delivered, and the result for the client."></textarea>
+          </div>
+          <div class="field">
+            <label for="pf-live">Live link (optional)</label>
+            <input id="pf-live" type="url" placeholder="https://example.com">
+          </div>
+          <div class="field">
+            <label for="pf-note">Reference note (optional)</label>
+            <input id="pf-note" type="text" maxlength="160" placeholder="For example: private project, delivered as files">
+          </div>
+          <div class="field full">
+            <label for="pf-img-url">Image (optional)</label>
+            <div class="pf-img">
+              <div class="pf-thumb" id="pf-thumb">No image</div>
+              <div class="pf-img-fields">
+                <input id="pf-img-url" type="url" placeholder="Paste an image link (https://…) or upload a file below">
+                <div class="pf-upload">
+                  <input id="pf-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif" aria-label="Upload an image">
+                  <button class="btn ghost small" id="pf-clear-img" type="button">Remove image</button>
+                </div>
+                <span class="pf-hint" id="pf-upload-msg">JPG, PNG, WebP or GIF, up to 5 MB.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="msg" id="pf-err" role="alert" hidden></div>
+        <div class="acts">
+          <button class="btn primary" id="pf-save" type="submit">Add proof item</button>
+          <button class="btn ghost" id="pf-cancel" type="button" hidden>Cancel edit</button>
+        </div>
+      </form>
+      <h2 class="pf-sub">Your proof items</h2>
+      <div class="list" id="pf-list" aria-live="polite"></div>
     </section>
   </div>
 </main>
@@ -251,13 +336,13 @@ var SIGNATURE="STM Kayes";
   function enter(session){
     if(entered)return;entered=true;
     $("who").textContent=session.user.email;
-    view("app");load();loadReviews();
+    view("app");load();loadReviews();loadProof();
   }
   sb.auth.onAuthStateChange(function(evt,session){
     /* keep this callback light; run Supabase calls outside it */
     setTimeout(function(){
       if(session){enter(session)}
-      else{entered=false;rows=[];reviews=[];view("login")}
+      else{entered=false;rows=[];reviews=[];proof=[];view("login")}
     },0);
   });
   sb.auth.getSession().then(function(r){
@@ -382,21 +467,25 @@ var SIGNATURE="STM Kayes";
 
   function askDelete(kind,row,text){
     pendingDelete={kind:kind,row:row};
-    $("confirm-title").textContent=kind==="review"?"Delete this review?":"Delete this request?";
+    $("confirm-title").textContent=kind==="review"?"Delete this review?":kind==="proof"?"Delete this proof item?":"Delete this request?";
     $("confirm-text").textContent=text;
     $("confirm").showModal();
   }
   $("confirm-no").addEventListener("click",function(){$("confirm").close();pendingDelete=null});
   $("confirm-yes").addEventListener("click",async function(){
     var p=pendingDelete;$("confirm").close();if(!p)return;pendingDelete=null;
-    var isReview=p.kind==="review";
-    var res=await sb.from(isReview?"reviews":"hire_requests").delete().eq("id",p.row.id).select();
+    var table={review:"reviews",proof:"proof_items",request:"hire_requests"}[p.kind];
+    var res=await sb.from(table).delete().eq("id",p.row.id).select();
     if(res.error||!res.data||!res.data.length){
       toast("Could not delete: "+(res.error?res.error.message:"no permission. Check you are signed in as the admin."),true);return;
     }
-    if(isReview){reviews=reviews.filter(function(x){return x.id!==p.row.id});renderReviews()}
-    else{rows=rows.filter(function(x){return x.id!==p.row.id});render()}
-    toast(isReview?"Review deleted":"Request deleted");
+    if(p.kind==="review"){reviews=reviews.filter(function(x){return x.id!==p.row.id});renderReviews();toast("Review deleted")}
+    else if(p.kind==="proof"){
+      proof=proof.filter(function(x){return x.id!==p.row.id});renderProof();
+      if(editingId===p.row.id)resetProofForm();
+      removeImage(p.row.image_url);toast("Proof item deleted");
+    }
+    else{rows=rows.filter(function(x){return x.id!==p.row.id});render();toast("Request deleted")}
   });
 
   /* ---------- reviews ---------- */
@@ -434,7 +523,111 @@ var SIGNATURE="STM Kayes";
       document.querySelectorAll(".tab").forEach(function(x){x.setAttribute("aria-selected",x===t?"true":"false")});
       $("panel-requests").hidden=t.dataset.tab!=="requests";
       $("panel-reviews").hidden=t.dataset.tab!=="reviews";
+      $("panel-proof").hidden=t.dataset.tab!=="proof";
     });
+  });
+
+  /* ---------- proof items ---------- */
+  var BUCKET="proof-images",proof=[],editingId=null,editingImage=null;
+  var EXT={"image/jpeg":"jpg","image/png":"png","image/webp":"webp","image/gif":"gif"};
+  function okUrl(u){return /^https?:\/\/\S+$/i.test(u||"")}
+  function proofDate(r){
+    var d=r.project_date?new Date(r.project_date+"T00:00:00"):new Date(r.created_at);
+    return isNaN(d)?"":d.toLocaleDateString([], {month:"short",year:"numeric"});
+  }
+  function showThumb(box,url){
+    box.replaceChildren();
+    if(okUrl(url)){
+      var i=new Image();i.alt="";i.src=url;
+      i.addEventListener("error",function(){box.replaceChildren(document.createTextNode("Image not found"))});
+      box.appendChild(i);
+    }else box.textContent="No image";
+  }
+  function hint(text,bad){var h=$("pf-upload-msg");h.textContent=text;h.className="pf-hint"+(bad?" bad":"")}
+  function removeImage(url){
+    /* delete the file from storage only when it was uploaded to our bucket (best effort) */
+    var m=url&&url.match(/\/storage\/v1\/object\/public\/proof-images\/([^?#]+)$/);
+    if(m)sb.storage.from(BUCKET).remove([decodeURIComponent(m[1])]).then(function(){},function(){});
+  }
+  async function loadProof(){
+    var list=$("pf-list");list.replaceChildren(el("div","empty","Loading proof items…"));
+    var res=await sb.from("proof_items").select("*").order("project_date",{ascending:false,nullsFirst:false}).order("created_at",{ascending:false});
+    if(res.error){list.replaceChildren(el("div","empty","Could not load proof items: "+res.error.message+". Did you run the proof_items SQL?"));return}
+    proof=res.data||[];renderProof();
+  }
+  function proofCard(r){
+    var a=el("article","req pf-item");a.dataset.id=r.id;
+    var th=el("div","pf-thumb");showThumb(th,r.image_url);a.appendChild(th);
+    var m=el("div","pf-main");
+    m.appendChild(el("h3",null,r.title));
+    var chips=el("div","chips");
+    chips.appendChild(chip("Category",r.category));
+    var d=proofDate(r);if(d)chips.appendChild(chip("Date",d));
+    if(okUrl(r.live_url))chips.appendChild(chip("Live",r.live_url,r.live_url));
+    if(r.reference_note)chips.appendChild(chip("Note",r.reference_note));
+    m.appendChild(el("p",null,r.description));m.appendChild(chips);
+    var b=el("div","pf-btns");
+    var ed=el("button","btn ghost small","Edit");ed.type="button";
+    ed.addEventListener("click",function(){editProof(r)});
+    var del=el("button","btn danger small","Delete");del.type="button";
+    del.addEventListener("click",function(){askDelete("proof",r,"This will permanently remove \u201c"+r.title+"\u201d from your Work Proof page.")});
+    b.appendChild(ed);b.appendChild(del);m.appendChild(b);a.appendChild(m);
+    return a;
+  }
+  function renderProof(){
+    $("tab-n-pf").textContent=proof.length;
+    var list=$("pf-list");list.replaceChildren();
+    if(!proof.length){list.appendChild(el("div","empty","No proof items yet. Add your first one above. Until then, visitors see the sample cards on proof.html."));return}
+    proof.forEach(function(r){list.appendChild(proofCard(r))});
+  }
+  function resetProofForm(){
+    editingId=null;editingImage=null;
+    $("pf-form").reset();$("pf-heading").textContent="Add a proof item";
+    $("pf-save").textContent="Add proof item";$("pf-cancel").hidden=true;$("pf-err").hidden=true;
+    showThumb($("pf-thumb"),"");hint("JPG, PNG, WebP or GIF, up to 5 MB.");
+  }
+  function editProof(r){
+    editingId=r.id;editingImage=r.image_url||null;
+    $("pf-title").value=r.title;$("pf-cat").value=r.category;$("pf-date").value=r.project_date||"";
+    $("pf-desc").value=r.description;$("pf-live").value=r.live_url||"";$("pf-note").value=r.reference_note||"";
+    $("pf-img-url").value=r.image_url||"";showThumb($("pf-thumb"),r.image_url);
+    $("pf-heading").textContent="Edit proof item";$("pf-save").textContent="Save changes";$("pf-cancel").hidden=false;$("pf-err").hidden=true;
+    $("pf-form").scrollIntoView({behavior:"smooth",block:"start"});
+  }
+  $("pf-cancel").addEventListener("click",resetProofForm);
+  $("pf-img-url").addEventListener("input",function(){showThumb($("pf-thumb"),this.value.trim())});
+  $("pf-clear-img").addEventListener("click",function(){$("pf-img-url").value="";$("pf-file").value="";showThumb($("pf-thumb"),"");hint("Image removed. Save the item to apply.")});
+  $("pf-file").addEventListener("change",async function(){
+    var f=this.files[0];if(!f)return;
+    if(!EXT[f.type]){hint("Please choose a JPG, PNG, WebP or GIF image.",true);this.value="";return}
+    if(f.size>5*1024*1024){hint("That image is larger than 5 MB.",true);this.value="";return}
+    hint("Uploading…");
+    var path=Date.now()+"-"+Math.random().toString(36).slice(2,8)+"."+EXT[f.type];
+    var up=await sb.storage.from(BUCKET).upload(path,f,{cacheControl:"31536000",contentType:f.type,upsert:false});
+    if(up.error){hint("Upload failed: "+up.error.message+". Did you run the storage SQL?",true);return}
+    var url=sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+    $("pf-img-url").value=url;showThumb($("pf-thumb"),url);
+    hint("Uploaded. Save the item to publish it.");this.value="";
+  });
+  $("pf-form").addEventListener("submit",async function(e){
+    e.preventDefault();
+    var err=$("pf-err");err.hidden=true;
+    function bad(m){err.textContent=m;err.hidden=false}
+    var title=$("pf-title").value.trim(),cat=$("pf-cat").value,desc=$("pf-desc").value.trim();
+    var live=$("pf-live").value.trim(),note=$("pf-note").value.trim(),img=$("pf-img-url").value.trim(),date=$("pf-date").value;
+    if(!title)return bad("Please enter a title.");
+    if(!desc)return bad("Please enter a short description.");
+    if(live&&!okUrl(live))return bad("The live link must start with http:// or https://");
+    if(img&&!okUrl(img))return bad("The image link must start with http:// or https://");
+    var payload={title:title,category:cat,description:desc,live_url:live||null,image_url:img||null,reference_note:note||null,project_date:date||null};
+    var btn=$("pf-save"),label=btn.textContent;btn.disabled=true;btn.textContent="Saving…";
+    var q=editingId?sb.from("proof_items").update(payload).eq("id",editingId).select():sb.from("proof_items").insert(payload).select();
+    var res=await q;
+    btn.disabled=false;btn.textContent=label;
+    if(res.error||!res.data||!res.data.length){return bad("Could not save: "+(res.error?res.error.message:"no permission. Check you are signed in as the admin."))}
+    if(editingId&&editingImage&&editingImage!==img)removeImage(editingImage);
+    toast(editingId?"Proof item updated":"Proof item added");
+    resetProofForm();await loadProof();
   });
 
   /* ---------- filters ---------- */
@@ -445,7 +638,7 @@ var SIGNATURE="STM Kayes";
     render();
   });
   $("search").addEventListener("input",function(e){query=e.target.value.trim().toLowerCase();render()});
-  $("refresh").addEventListener("click",function(){load();loadReviews()});
+  $("refresh").addEventListener("click",function(){load();loadReviews();loadProof()});
 })();
 </script>
 </body>
