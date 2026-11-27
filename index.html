@@ -1000,6 +1000,15 @@ footer p{color:var(--muted);max-width:28em}
   var FLAG="stm-review-submitted",locked=false,submittedNow=false;
   function hasSubmitted(){try{return localStorage.getItem(FLAG)==="1"}catch(e){return false}}
   function remember(){try{localStorage.setItem(FLAG,"1")}catch(e){}}
+  /* secret that lets this browser edit or delete the review it wrote (see reviews.html) */
+  var MINE_KEY="stm-my-review";
+  function newToken(){
+    var a=new Uint8Array(24);
+    if(window.crypto&&crypto.getRandomValues)crypto.getRandomValues(a);else for(var i=0;i<a.length;i++)a[i]=Math.floor(Math.random()*256);
+    return [].map.call(a,function(b){return ("0"+b.toString(16)).slice(-2)}).join("");
+  }
+  function saveMine(id,token){try{localStorage.setItem(MINE_KEY,JSON.stringify({id:id,token:token}))}catch(e){}}
+  function missingFn(err){return /PGRST202|42883|Could not find the function|does not exist/i.test(((err&&err.code)||"")+" "+((err&&err.message)||""))}
   function lock(showNote){
     locked=true;
     form.querySelectorAll("input,textarea,button").forEach(function(el){el.disabled=true});
@@ -1007,7 +1016,11 @@ footer p{color:var(--muted);max-width:28em}
     form.closest(".rv-form").classList.add("is-locked");
     if(showNote)document.getElementById("rv-locked").hidden=false;
   }
-  window.addEventListener("storage",function(e){if(e.key===FLAG&&e.newValue==="1"&&!locked)lock(true)});
+  window.addEventListener("storage",function(e){
+    if(e.key===FLAG&&e.newValue==="1"&&!locked)lock(true);
+    else if(e.key===FLAG&&e.newValue===null&&locked)location.reload();
+  });
+  window.addEventListener("pageshow",function(e){if(e.persisted&&locked&&!hasSubmitted())location.reload()});
   function fail(m){err.textContent=m;err.hidden=false}
   form.addEventListener("submit",async function(e){
     e.preventDefault();err.hidden=true;
@@ -1024,9 +1037,17 @@ footer p{color:var(--muted);max-width:28em}
     try{
       if(!document.getElementById("rv-website").value){
         var c=getSupabase();if(!c)throw new Error("Supabase library did not load");
-        var res=await c.from("reviews").insert({reviewer_name:name,rating:+sel.value,feedback:text}).select("id,created_at,reviewer_name,rating,feedback").single();
+        var token=newToken();
+        var res=await c.rpc("create_review",{p_name:name,p_rating:+sel.value,p_feedback:text,p_token:token});
+        if(res.error&&missingFn(res.error)){   /* edit/delete SQL not installed yet: plain insert, review cannot be edited later */
+          token=null;
+          res=await c.from("reviews").insert({reviewer_name:name,rating:+sel.value,feedback:text}).select("id,created_at,reviewer_name,rating,feedback").single();
+        }
         if(res.error)throw res.error;
-        reviews.unshift(res.data);render(true);summary();
+        var row=Array.isArray(res.data)?res.data[0]:res.data;
+        reviews.unshift({id:row.id,created_at:row.created_at,reviewer_name:row.reviewer_name,rating:row.rating,feedback:row.feedback});
+        render(true);summary();
+        if(token)saveMine(row.id,token);
         remember();submittedNow=true;
       }
       document.getElementById("rv-who").textContent=name;

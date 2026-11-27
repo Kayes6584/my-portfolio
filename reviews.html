@@ -22,7 +22,7 @@
 <style>
 :root{
   --paper:#f6f8f7; --surface:#ffffff; --ink:#15231e; --muted:#51635c; --line:#d8e1dd;
-  --green:#1d6f42; --green-ink:#ffffff; --green-soft:#e2f1e8;
+  --green:#1d6f42; --green-ink:#ffffff; --green-soft:#e2f1e8; --danger:#b3261e;
   --display:"Bricolage Grotesque","Segoe UI",Arial,sans-serif;
   --body:"Figtree","Segoe UI",Arial,sans-serif;
   box-sizing:border-box;
@@ -31,7 +31,7 @@
 @media (prefers-color-scheme:dark){
   :root{
     --paper:#0f1a16; --surface:#16251f; --ink:#e9f1ed; --muted:#9db0a8; --line:#294038;
-    --green:#4fb67f; --green-ink:#08150f; --green-soft:#183427;
+    --green:#4fb67f; --green-ink:#08150f; --green-soft:#183427; --danger:#ff8f85;
   }
 }
 *,*::before,*::after{box-sizing:inherit}
@@ -98,6 +98,30 @@ a{color:inherit}
 .rc-date{display:block;margin-top:2px;color:var(--muted);font-size:.82rem;font-weight:400}
 .review-card p{color:var(--muted);overflow-wrap:anywhere}
 .rv-sum,.review-card{transition:border-color .3s ease,box-shadow .3s ease,translate .3s ease}
+/* edit and delete your own review */
+.rc-tag{margin-left:8px;padding:2px 9px;border-radius:99px;background:var(--green-soft);color:var(--green);font-size:.72rem;font-weight:600;vertical-align:middle}
+.rc-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:auto;padding-top:4px}
+.rc-btn{font:inherit;font-size:.85rem;font-weight:500;padding:5px 14px;border:1px solid var(--line);border-radius:999px;background:transparent;color:var(--muted);cursor:pointer;transition:all .25s ease}
+.rc-btn:hover{border-color:var(--green);color:var(--green)}
+.rc-btn.danger:hover{border-color:var(--danger);color:var(--danger)}
+.rc-confirm{width:100%;color:var(--muted);font-size:.9rem}
+.review-card.editing{translate:none!important;animation:none}
+.rc-edit{display:grid;gap:12px}
+.rc-edit label{font-weight:600;font-size:.88rem}
+.rc-edit input[type=text],.rc-edit textarea{width:100%;font:inherit;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.rc-edit textarea{min-height:110px;resize:vertical}
+.rc-edit input:focus,.rc-edit textarea:focus{outline:2px solid var(--green);outline-offset:1px;border-color:var(--green)}
+.rc-pick{display:inline-flex;gap:2px}
+.rc-star{padding:2px;border:0;background:none;color:var(--line);line-height:0;cursor:pointer;transition:transform .2s ease,color .2s ease}
+.rc-star svg{width:30px;height:30px;fill:currentColor;display:block}
+.rc-star.on{color:#f5b301}
+@media (hover:hover){.rc-star:hover{transform:scale(1.12)}}
+.rc-row{display:flex;flex-wrap:wrap;gap:10px}
+.rc-err{color:var(--danger);font-size:.9rem}
+.btn.sm{padding:8px 18px;font-size:.92rem}
+.btn.danger{border-color:var(--danger);color:var(--danger)}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));translate:-50% 0;z-index:80;max-width:calc(100% - 32px);padding:12px 18px;border:1px solid rgba(255,255,255,.15);border-radius:12px;background:#0b1411;color:#eaf2ee;box-shadow:0 14px 30px -12px rgba(0,0,0,.5);font-weight:500}
+.toast a{color:#4fb67f;font-weight:600;margin-left:6px}
 @media (hover:hover){.rv-sum:hover,.review-card:hover{translate:0 -6px;border-color:var(--green);box-shadow:0 16px 38px -14px color-mix(in srgb,var(--green) 50%,transparent),0 0 0 1px color-mix(in srgb,var(--green) 50%,transparent)}}
 .review-card:active{translate:0 -6px;border-color:var(--green)}
 .rv-empty{grid-column:1/-1;padding:32px 20px;text-align:center;color:var(--muted);background:var(--surface);border:1px dashed var(--line);border-radius:16px}
@@ -190,33 +214,150 @@ var SUPABASE_KEY="sb_publishable_2D41bAtgqOqKxl0n80LBMg_3rKJDyDl";
 </script>
 <script>
 (function(){
-  var BATCH=12,shown=BATCH,reviews=[];
+  var BATCH=12,shown=BATCH,reviews=[],sb=null;
+  var MINE_KEY="stm-my-review",FLAG="stm-review-submitted";
   var list=document.getElementById("rv-list");
   var STAR='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.9-4.8 4.6 1.2 6.6L12 17.6 6.1 20.7l1.2-6.6L2.5 9.5l6.6-.9z"/></svg>';
   var ROW=STAR+STAR+STAR+STAR+STAR;
+
+  /* ===== "my review": remembered in this browser when it was written on the home page ===== */
+  function mine(){try{var m=JSON.parse(localStorage.getItem(MINE_KEY)||"null");return m&&m.id&&m.token?m:null}catch(e){return null}}
+  function forget(){try{localStorage.removeItem(MINE_KEY);localStorage.removeItem(FLAG)}catch(e){}}
+  function isMine(x){var m=mine();return !!m&&m.id===x.id}
+
+  function el(tag,cls,text){var n=document.createElement(tag);if(cls)n.className=cls;if(text!=null)n.textContent=text;return n}
   function stars(v){
-    var s=document.createElement("span");s.className="stars";s.setAttribute("role","img");
+    var s=el("span","stars");s.setAttribute("role","img");
     s.setAttribute("aria-label",(Math.round(v*10)/10)+" out of 5 stars");
     s.innerHTML='<span class="bg">'+ROW+'</span><span class="fg" style="width:'+(v/5*100)+'%"><span>'+ROW+'</span></span>';
     return s;
   }
-  function note(text){var d=document.createElement("div");d.className="rv-empty";d.textContent=text;return d}
+  function note(text){return el("div","rv-empty",text)}
   function when(iso){
     var d=new Date(iso);if(isNaN(d))return "";
     return d.toLocaleDateString(undefined,{year:"numeric",month:"short",day:"numeric"});
   }
-  function card(x,i){
-    var a=document.createElement("article");a.className="review-card";a.style.setProperty("--i",i);
-    var h=document.createElement("div");h.className="rc-head";
-    var av=document.createElement("div");av.className="rc-av";av.setAttribute("aria-hidden","true");
-    av.textContent=(x.reviewer_name.trim().charAt(0)||"?").toUpperCase();
-    var nm=document.createElement("div");nm.className="rc-name";nm.textContent=x.reviewer_name;
-    var dt=document.createElement("span");dt.className="rc-date";dt.textContent=when(x.created_at);nm.appendChild(dt);
+  var toastTimer=null;
+  function toast(text,linkText,href){
+    var t=document.getElementById("toast");if(!t){t=el("div","toast");t.id="toast";t.setAttribute("role","status");document.body.appendChild(t)}
+    t.replaceChildren(document.createTextNode(text));
+    if(linkText){var a=el("a",null,linkText);a.href=href;t.appendChild(a)}
+    t.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(function(){t.hidden=true},6500);
+  }
+  function clean(x){return {id:x.id,created_at:x.created_at,reviewer_name:x.reviewer_name,rating:x.rating,feedback:x.feedback}}
+  function client(){
+    if(!sb&&window.supabase&&window.supabase.createClient)sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+    return sb;
+  }
+
+  /* ===== one review card ===== */
+  function card(x,i,still){
+    var a=el("article","review-card");a.style.setProperty("--i",i);a.dataset.id=x.id;
+    if(still)a.style.animation="none";
+    var h=el("div","rc-head");
+    var av=el("div","rc-av",(x.reviewer_name.trim().charAt(0)||"?").toUpperCase());av.setAttribute("aria-hidden","true");
+    var nm=el("div","rc-name",x.reviewer_name);
+    if(isMine(x))nm.appendChild(el("span","rc-tag","Your review"));
+    nm.appendChild(el("span","rc-date",when(x.created_at)));
     h.appendChild(av);h.appendChild(nm);
-    var p=document.createElement("p");p.textContent=x.feedback;
-    a.appendChild(h);a.appendChild(stars(x.rating));a.appendChild(p);
+    a.appendChild(h);a.appendChild(stars(x.rating));a.appendChild(el("p",null,x.feedback));
+    if(isMine(x))a.appendChild(actions(x,a));
     return a;
   }
+
+  /* ===== Edit / Delete buttons ===== */
+  function actions(x,a){
+    var row=el("div","rc-actions");
+    var ed=el("button","rc-btn","Edit");ed.type="button";
+    var del=el("button","rc-btn danger","Delete");del.type="button";
+    ed.addEventListener("click",function(){a.replaceWith(editor(x))});
+    del.addEventListener("click",function(){
+      row.replaceChildren(el("span","rc-confirm","Delete your review? You can write a new one afterwards."));
+      var yes=el("button","btn sm danger","Yes, delete");yes.type="button";
+      var no=el("button","btn sm ghost","Keep it");no.type="button";
+      no.addEventListener("click",function(){a.replaceWith(card(x,0,true))});
+      yes.addEventListener("click",function(){remove(x,yes,no)});
+      row.appendChild(yes);row.appendChild(no);
+    });
+    row.appendChild(ed);row.appendChild(del);
+    return row;
+  }
+
+  async function remove(x,yes,no){
+    var m=mine();yes.disabled=no.disabled=true;yes.textContent="Deleting…";
+    try{
+      var c=client();if(!c||!m)throw new Error("not available");
+      var res=await c.rpc("delete_my_review",{p_id:x.id,p_token:m.token});
+      if(res.error)throw res.error;
+      if(res.data!==true)throw new Error("not allowed");
+      reviews=reviews.filter(function(r){return r.id!==x.id});
+      forget();render();summary();
+      toast("Your review was deleted.","Write a new one","index.html#leave-review");
+    }catch(e){
+      console.error("delete failed:",e);
+      yes.disabled=no.disabled=false;yes.textContent="Yes, delete";
+      toast("Sorry, the review could not be deleted. Please try again.");
+    }
+  }
+
+  /* ===== inline editor ===== */
+  function editor(x){
+    var a=el("article","review-card editing");a.dataset.id=x.id;
+    var f=el("form","rc-edit");f.noValidate=true;
+    var rating=x.rating;
+
+    var l1=el("label",null,"Your name");l1.htmlFor="ed-name-"+x.id;
+    var name=el("input");name.type="text";name.id="ed-name-"+x.id;name.maxLength=60;name.value=x.reviewer_name;name.autocomplete="name";
+
+    var l2=el("label",null,"Your rating");
+    var pick=el("div","rc-pick");pick.setAttribute("role","radiogroup");pick.setAttribute("aria-label","Your rating");
+    var btns=[];
+    function paint(){btns.forEach(function(b,i){b.classList.toggle("on",i<rating);b.setAttribute("aria-checked",i+1===rating?"true":"false")})}
+    for(var k=1;k<=5;k++)(function(k){
+      var b=el("button","rc-star");b.type="button";b.setAttribute("role","radio");b.setAttribute("aria-label",k+(k===1?" star":" stars"));b.innerHTML=STAR;
+      b.addEventListener("click",function(){rating=k;paint()});
+      btns.push(b);pick.appendChild(b);
+    })(k);
+    paint();
+
+    var l3=el("label",null,"Your review");l3.htmlFor="ed-text-"+x.id;
+    var text=el("textarea");text.id="ed-text-"+x.id;text.maxLength=500;text.value=x.feedback;
+
+    var err=el("p","rc-err");err.setAttribute("role","alert");err.hidden=true;
+    var row=el("div","rc-row");
+    var save=el("button","btn primary sm","Save changes");save.type="submit";
+    var cancel=el("button","btn ghost sm","Cancel");cancel.type="button";
+    row.appendChild(save);row.appendChild(cancel);
+    [l1,name,l2,pick,l3,text,err,row].forEach(function(n){f.appendChild(n)});
+
+    cancel.addEventListener("click",function(){a.replaceWith(card(x,0,true))});
+    f.addEventListener("submit",async function(e){
+      e.preventDefault();err.hidden=true;
+      var n=name.value.trim(),t=text.value.trim();
+      if(!n){err.textContent="Please enter your name.";err.hidden=false;return}
+      if(!t){err.textContent="Please write a few words of feedback.";err.hidden=false;return}
+      var m=mine();save.disabled=true;save.textContent="Saving…";
+      try{
+        var c=client();if(!c||!m)throw new Error("not available");
+        var res=await c.rpc("update_my_review",{p_id:x.id,p_token:m.token,p_name:n,p_rating:rating,p_feedback:t});
+        if(res.error)throw res.error;
+        var row2=Array.isArray(res.data)?res.data[0]:res.data;
+        var updated=clean(row2);
+        reviews=reviews.map(function(r){return r.id===x.id?updated:r});
+        a.replaceWith(card(updated,0,true));summary();
+        toast("Your review was updated.");
+      }catch(e2){
+        console.error("update failed:",e2);
+        err.textContent="Sorry, your changes could not be saved. Please try again.";err.hidden=false;
+        save.disabled=false;save.textContent="Save changes";
+      }
+    });
+    a.appendChild(f);
+    setTimeout(function(){name.focus()},0);
+    return a;
+  }
+
+  /* ===== summary, list, loading ===== */
   function summary(){
     var sum=0,c=[0,0,0,0,0,0];
     reviews.forEach(function(x){sum+=x.rating;c[x.rating]++});
@@ -226,7 +367,7 @@ var SUPABASE_KEY="sb_publishable_2D41bAtgqOqKxl0n80LBMg_3rKJDyDl";
     document.getElementById("rv-count").textContent=n?"Based on "+n+" review"+(n===1?"":"s"):"No reviews yet";
     var b=document.getElementById("rv-bars");b.innerHTML="";
     for(var k=5;k>=1;k--){
-      var row=document.createElement("div");row.className="rv-bar";
+      var row=el("div","rv-bar");
       row.innerHTML='<span>'+k+' \u2605</span><span class="rv-track"><span class="rv-fill" style="width:'+(n?c[k]/n*100:0)+'%"></span></span><span>'+c[k]+'</span>';
       b.appendChild(row);
     }
@@ -236,11 +377,10 @@ var SUPABASE_KEY="sb_publishable_2D41bAtgqOqKxl0n80LBMg_3rKJDyDl";
     if(!reviews.length){list.appendChild(note("No reviews yet."));return}
     reviews.slice(0,shown).forEach(function(x,i){list.appendChild(card(x,i%BATCH))});
     if(reviews.length>shown){
-      var w=document.createElement("div");w.className="rv-more-wrap";
-      var b=document.createElement("button");b.type="button";b.className="btn ghost";b.textContent="Load more reviews";
+      var w=el("div","rv-more-wrap");
+      var b=el("button","btn ghost","Load more reviews");b.type="button";
       b.addEventListener("click",function(){shown+=BATCH;render()});
-      var cap=document.createElement("p");cap.className="rv-cap";cap.textContent="Showing "+shown+" of "+reviews.length+" reviews";
-      w.appendChild(b);w.appendChild(cap);list.appendChild(w);
+      w.appendChild(b);w.appendChild(el("p","rv-cap","Showing "+shown+" of "+reviews.length+" reviews"));list.appendChild(w);
     }
   }
   function problem(){
@@ -248,11 +388,14 @@ var SUPABASE_KEY="sb_publishable_2D41bAtgqOqKxl0n80LBMg_3rKJDyDl";
     document.getElementById("rv-count").textContent="";
   }
   async function load(){
-    if(!window.supabase||!window.supabase.createClient){problem();return}
-    var c=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+    var c=client();
+    if(!c){problem();return}
     var res=await c.from("reviews").select("id,created_at,reviewer_name,rating,feedback").order("created_at",{ascending:false}).limit(1000);
     if(res.error){console.error("reviews load failed:",res.error);problem();return}
-    reviews=res.data||[];render();summary();
+    reviews=res.data||[];
+    /* the saved review no longer exists (deleted by the admin): let this visitor write a new one */
+    var m=mine();if(m&&reviews.length<1000&&!reviews.some(function(r){return r.id===m.id}))forget();
+    render();summary();
   }
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",load);else load();
 })();
