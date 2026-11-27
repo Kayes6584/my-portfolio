@@ -432,6 +432,28 @@ footer p{color:var(--muted);max-width:28em}
 .pm-social a:active{translate:0 -4px;border-color:#4fb67f}
 @media (max-width:480px){.pm-contact li{flex-wrap:wrap}.pm-btns{width:100%}.pm-btns button,.pm-btns a{flex:1;text-align:center}.pm-social a{flex:1 1 calc(50% - 10px);justify-content:center}}
 
+/* soft green glow / pulse: hero logo circle and profile popup photo */
+@keyframes stm-pulse{
+  0%{box-shadow:0 0 0 0 rgba(79,182,127,.38),0 0 14px 2px rgba(79,182,127,.22),0 8px 22px -10px rgba(0,0,0,.55)}
+  70%{box-shadow:0 0 0 13px rgba(79,182,127,0),0 0 22px 4px rgba(79,182,127,.12),0 8px 22px -10px rgba(0,0,0,.55)}
+  100%{box-shadow:0 0 0 0 rgba(79,182,127,0),0 0 14px 2px rgba(79,182,127,.22),0 8px 22px -10px rgba(0,0,0,.55)}
+}
+.avatar,.pm-photo{animation:stm-pulse 3.2s ease-in-out infinite}
+@media (hover:hover){.who:hover .avatar{animation:none}}
+.who:active .avatar{animation:none}
+@media (prefers-reduced-motion:reduce){.avatar,.pm-photo{animation:none;box-shadow:0 0 14px 2px rgba(79,182,127,.22)}}
+
+/* reusable left-to-right entrance: add class="slide-ltr" to any heading or paragraph */
+.js .slide-ltr{opacity:0;transform:translateX(-40px);transition:opacity .8s cubic-bezier(.22,.61,.36,1),transform .8s cubic-bezier(.22,.61,.36,1);transition-delay:var(--slide-delay,0ms);will-change:opacity,transform}
+.js .slide-ltr.in-view{opacity:1;transform:none}
+/* right-to-left twin: add class="slide-rtl" */
+.js .slide-rtl{opacity:0;transform:translateX(28px);transition:opacity .8s cubic-bezier(.22,.61,.36,1),transform .8s cubic-bezier(.22,.61,.36,1);transition-delay:var(--slide-delay,0ms);will-change:opacity,transform}
+.js .slide-rtl.in-view{opacity:1;transform:none}
+.tools li{overflow-x:clip}
+#who-is-stm-kayes .who-copy{overflow-x:clip}
+@media (max-width:860px){.js .slide-ltr{transform:translateX(-24px)}.js .slide-rtl{transform:translateX(16px)}}
+@media (prefers-reduced-motion:reduce){.js .slide-ltr,.js .slide-ltr.in-view,.js .slide-rtl,.js .slide-rtl.in-view{opacity:1;transform:none;transition:none}}
+
 /* floating mascot */
 .buddy-wrap{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom,0px));right:calc(20px + env(safe-area-inset-right,0px));z-index:1000;display:flex;flex-direction:column;align-items:flex-end}
 .buddy{position:relative;display:flex;flex-direction:column;align-items:flex-end;padding:0;border:0;background:none;font:inherit;color:inherit;cursor:grab;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
@@ -547,15 +569,15 @@ footer p{color:var(--muted);max-width:28em}
 
     <section id="about">
       <div class="about">
-        <div>
-          <h2>About me</h2>
-          <p>I’m a freelancer who works with business owners, students, and fellow creators. Most of my clients come to me with something that works but looks and feels like a mess: a spreadsheet nobody trusts, a report that needs a rewrite, a website that no one can find.</p>
-          <p>I fix the structure first, then the details. You get files you can open, understand, and keep using without me. Outside client work, I create content that explains these skills in plain language.</p>
+        <div data-slide-group>
+          <h2 class="slide-ltr">About me</h2>
+          <p class="slide-ltr">I’m a freelancer who works with business owners, students, and fellow creators. Most of my clients come to me with something that works but looks and feels like a mess: a spreadsheet nobody trusts, a report that needs a rewrite, a website that no one can find.</p>
+          <p class="slide-ltr">I fix the structure first, then the details. You get files you can open, understand, and keep using without me. Outside client work, I create content that explains these skills in plain language.</p>
         </div>
-        <ul class="tools">
-          <li><b>I work with people directly</b><span>One point of contact, honest timelines, and updates as I go.</span></li>
-          <li><b>I explain what I change</b><span>Every project comes with short notes so you can maintain the result.</span></li>
-          <li><b>I make content too</b><span>Tutorials and tips on spreadsheets, documents, and search.</span></li>
+        <ul class="tools" data-slide-group>
+          <li><b class="slide-rtl">I work with people directly</b><span class="slide-rtl">One point of contact, honest timelines, and updates as I go.</span></li>
+          <li><b class="slide-rtl">I explain what I change</b><span class="slide-rtl">Every project comes with short notes so you can maintain the result.</span></li>
+          <li><b class="slide-rtl">I make content too</b><span class="slide-rtl">Tutorials and tips on spreadsheets, documents, and search.</span></li>
         </ul>
       </div>
     </section>
@@ -628,12 +650,12 @@ footer p{color:var(--muted);max-width:28em}
       </div>
     </section>
     <section id="who-is-stm-kayes">
-      <h2>Who is STM Kayes?</h2>
+      <h2 class="slide-ltr">Who is STM Kayes?</h2>
       <div class="who-grid">
         <div class="who-copy">
-          <p><strong>STM Kayes</strong> is the professional name of <strong>Sajjat Mahmut Kayes</strong>, a freelance web builder, app developer and content creator based in Cumilla, Bangladesh. People who search for “Who is STM Kayes?” will find a digital service provider who builds fast, modern websites and Android apps for businesses, students and creators.</p>
-          <p>Beyond web and app development, STM Kayes offers <strong>On-Page SEO</strong> to help pages get found on Google, along with <strong>data entry</strong>, Microsoft Excel and Microsoft Word services that turn messy information into clean, usable work. Every project starts with a short conversation about goals, so the result fits the brand it is built for.</p>
-          <p>STM Kayes also creates content that explains these skills in plain language, so clients and learners can understand the work behind a good website.</p>
+          <p class="slide-ltr"><strong>STM Kayes</strong> is the professional name of <strong>Sajjat Mahmut Kayes</strong>, a freelance web builder, app developer and content creator based in Cumilla, Bangladesh. People who search for “Who is STM Kayes?” will find a digital service provider who builds fast, modern websites and Android apps for businesses, students and creators.</p>
+          <p class="slide-ltr">Beyond web and app development, STM Kayes offers <strong>On-Page SEO</strong> to help pages get found on Google, along with <strong>data entry</strong>, Microsoft Excel and Microsoft Word services that turn messy information into clean, usable work. Every project starts with a short conversation about goals, so the result fits the brand it is built for.</p>
+          <p class="slide-ltr">STM Kayes also creates content that explains these skills in plain language, so clients and learners can understand the work behind a good website.</p>
         </div>
         <aside class="fact-card" aria-label="Quick facts about STM Kayes">
           <h3>Quick facts</h3>
@@ -649,8 +671,8 @@ footer p{color:var(--muted);max-width:28em}
     </section>
 
     <section id="why-choose">
-      <h2>Why Choose STM Kayes as Your Web Builder?</h2>
-      <p style="color:var(--muted);max-width:38em">Comparing best web builder sites, or searching for the best web builder for small business? Here is what you can expect when you work with STM Kayes, from SEO-ready structure to clear communication.</p>
+      <h2 class="slide-ltr">Why Choose STM Kayes as Your Web Builder?</h2>
+      <p class="slide-ltr" style="color:var(--muted);max-width:38em">Comparing best web builder sites, or searching for the best web builder for small business? Here is what you can expect when you work with STM Kayes, from SEO-ready structure to clear communication.</p>
       <div class="why-grid">
         <article class="why-card">
           <div class="tile s" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg></div>
@@ -1026,8 +1048,8 @@ footer p{color:var(--muted);max-width:28em}
 (function(){
   var root=document.documentElement;
   try{
-    var sel=".top .brand,.menu>li,.who,.hero .tag,.hero h1 .svc,.hero .lead,.actions,.sheet,section h2,section>p,.about p,.tools li,.card,footer h2,footer p,footer .mail,.social a,.who-copy p,.fact-card,.why-card,.why-cta,.rv-sum,.review-card,.rv-form,.hire h2,.hire .hire-lead,.hire .direct,.hire .form-card";
-    var els=document.querySelectorAll(sel);
+    var sel=".top .brand,.menu>li,.who,.hero .tag,.hero h1 .svc,.hero .lead,.actions,.sheet,section h2,section>p,.about p,.card,footer h2,footer p,footer .mail,.social a,.who-copy p,.fact-card,.why-card,.why-cta,.rv-sum,.review-card,.rv-form,.hire h2,.hire .hire-lead,.hire .direct,.hire .form-card";
+    var els=[].filter.call(document.querySelectorAll(sel),function(el){return !el.classList.contains("slide-ltr")&&!el.classList.contains("slide-rtl")});
     els.forEach(function(el){el.classList.add("reveal")});
     if(!("IntersectionObserver" in window)){els.forEach(function(el){el.classList.add("in")});return;}
     var io=new IntersectionObserver(function(entries){
@@ -1294,6 +1316,41 @@ document.addEventListener("touchstart",function(){},{passive:true});
   function update(){ticking=false;bar.classList.toggle("scrolled",(window.scrollY||document.documentElement.scrollTop)>8)}
   window.addEventListener("scroll",function(){if(!ticking){ticking=true;requestAnimationFrame(update)}},{passive:true});
   update();
+})();
+</script>
+<script>
+(function(){
+  var items=[].slice.call(document.querySelectorAll(".slide-ltr,.slide-rtl"));
+  if(!items.length)return;
+  function show(el,on){el.classList.toggle("in-view",on)}
+  if(!("IntersectionObserver" in window)){items.forEach(function(el){show(el,true)});return}
+
+  /* small stagger inside each group (a column or a section): first item first */
+  items.forEach(function(el){
+    var box=el.closest("[data-slide-group]")||el.closest("section")||document;
+    var group=[].slice.call(box.querySelectorAll(".slide-ltr,.slide-rtl"));
+    el.style.setProperty("--slide-delay",(group.indexOf(el)*90)+"ms");
+  });
+
+  /* in view -> slide in; fully out of view -> reset, so it plays again next time */
+  var io=new IntersectionObserver(function(entries){
+    entries.forEach(function(e){show(e.target,e.isIntersecting)});
+  },{rootMargin:"0px 0px -8% 0px"});
+  items.forEach(function(el){io.observe(el)});
+
+  /* safety net: anything that is on screen but still hidden gets shown */
+  function rescue(){
+    var vh=window.innerHeight||document.documentElement.clientHeight;
+    items.forEach(function(el){
+      if(el.classList.contains("in-view"))return;
+      var r=el.getBoundingClientRect();
+      if(r.width>0&&r.height>0&&r.top<vh*0.92&&r.bottom>0)show(el,true);
+    });
+  }
+  window.addEventListener("load",function(){setTimeout(rescue,600)});
+  window.addEventListener("pageshow",function(e){if(e.persisted)rescue()});
+  window.addEventListener("resize",rescue);
+  window.addEventListener("orientationchange",rescue);
 })();
 </script>
 </body>
