@@ -19,25 +19,29 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<script>
+/* theme: dark is the default; the visitor's choice is remembered in localStorage ("stm-theme") */
+(function(){var t="dark";try{if(localStorage.getItem("stm-theme")==="light")t="light"}catch(e){}document.documentElement.setAttribute("data-theme",t)})();
+</script>
 <style>
 :root{
-  --paper:#f6f8f7; --surface:#ffffff; --ink:#15231e; --muted:#51635c; --line:#d8e1dd;
-  --green:#1d6f42; --green-ink:#ffffff; --green-soft:#e2f1e8;
+  --paper:#0f1a16; --surface:#16251f; --ink:#e9f1ed; --muted:#9db0a8; --line:#294038;
+  --green:#4fb67f; --green-ink:#08150f; --green-soft:#183427;
   --display:"Bricolage Grotesque","Segoe UI",Arial,sans-serif;
   --body:"Figtree","Segoe UI",Arial,sans-serif;
+  color-scheme:dark;
   box-sizing:border-box;
   padding-bottom:env(safe-area-inset-bottom,0px);
 }
-@media (prefers-color-scheme:dark){
-  :root{
-    --paper:#0f1a16; --surface:#16251f; --ink:#e9f1ed; --muted:#9db0a8; --line:#294038;
-    --green:#4fb67f; --green-ink:#08150f; --green-soft:#183427;
-  }
+:root[data-theme="light"]{
+  --paper:#f6f8f7; --surface:#ffffff; --ink:#15231e; --muted:#51635c; --line:#d8e1dd;
+  --green:#1d6f42; --green-ink:#ffffff; --green-soft:#e2f1e8;
+  color-scheme:light;
 }
 *,*::before,*::after{box-sizing:inherit}
 [hidden]{display:none!important}
 html{scroll-behavior:smooth}
-body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.6}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.6;transition:background-color .3s ease,color .3s ease}
 h1,h2,h3{font-family:var(--display);line-height:1.12;margin:0;letter-spacing:-.02em}
 p{margin:0}
 a{color:inherit}
@@ -132,11 +136,36 @@ footer a{text-decoration:none;font-weight:600;color:var(--green)}
   .menu{width:auto;gap:0 clamp(8px,2.4vw,16px)}
   .top nav{width:auto;margin-left:auto}
 }
-@media (max-width:389px){
-  .top nav{width:100%;margin-left:0}
+@media (max-width:399px){
+  .top nav{width:100%;margin-left:0;order:3}
   .menu{width:100%;justify-content:space-between}
+  .theme-toggle{order:2;margin-left:auto}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
+/* theme toggle button (sun / moon) */
+.top{--nav-line:rgba(255,255,255,.18)}
+.top nav{margin-left:auto}
+.theme-toggle{flex:none;display:grid;place-items:center;width:36px;height:36px;padding:0;border:1px solid var(--nav-line);border-radius:50%;background:transparent;color:var(--nav-muted);cursor:pointer;transition:all .3s ease;-webkit-tap-highlight-color:transparent}
+.theme-toggle svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.theme-toggle .ti-moon{display:none}
+html[data-theme="light"] .theme-toggle .ti-sun{display:none}
+html[data-theme="light"] .theme-toggle .ti-moon{display:block}
+@media (hover:hover){.theme-toggle:hover{translate:0 -4px;color:#fff;border-color:#4fb67f;box-shadow:0 8px 18px -8px rgba(79,182,127,.6)}}
+.theme-toggle:active{translate:0 -4px;border-color:#4fb67f}
+.theme-toggle:focus-visible{outline:3px solid #4fb67f;outline-offset:3px}
+@media (max-width:768px){.theme-toggle{width:32px;height:32px}.theme-toggle svg{width:16px;height:16px}}
+/* ============ Light (white) theme: the parts that use fixed dark colours ============ */
+html[data-theme="light"] .top{--nav-muted:#51635c;--nav-line:rgba(0,0,0,.16);background:#ffffff;color:#15231e;border-bottom-color:rgba(0,0,0,.08)}
+html[data-theme="light"] .nav-link:hover,html[data-theme="light"] .nav-link.active{color:#0b1411}
+html[data-theme="light"] .nav-link.active::after{background:#1d6f42}
+html[data-theme="light"] .top :focus-visible{outline-color:#1d6f42}
+html[data-theme="light"] .top.scrolled{background-color:rgba(255,255,255,.72);box-shadow:0 10px 30px -18px rgba(0,0,0,.28)}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){html[data-theme="light"] .top.scrolled{background-color:rgba(255,255,255,.96)}}
+@media (prefers-reduced-transparency:reduce){html[data-theme="light"] .top.scrolled{background-color:#ffffff}}
+html[data-theme="light"] .brand img{filter:invert(1)}
+@media (hover:hover){html[data-theme="light"] .theme-toggle:hover{color:#0b1411;border-color:#1d6f42;box-shadow:0 8px 18px -8px rgba(29,111,66,.4)}}
+html[data-theme="light"] .theme-toggle:active{border-color:#1d6f42}
+html[data-theme="light"] .theme-toggle:focus-visible{outline-color:#1d6f42}
 </style>
 </head>
 <body>
@@ -151,6 +180,10 @@ footer a{text-decoration:none;font-weight:600;color:var(--green)}
         <li><a class="nav-link" href="index.html#hire">Hire me</a></li>
       </ul>
     </nav>
+    <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch to light mode" title="Switch to light mode">
+      <svg class="ti-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M4.9 4.9l1.6 1.6M17.5 17.5l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.9 19.1l1.6-1.6M17.5 6.5l1.6-1.6"/></svg>
+      <svg class="ti-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 13.2A8.5 8.5 0 1 1 10.8 3.5a6.8 6.8 0 0 0 9.7 9.7z"/></svg>
+    </button>
   </div>
 </header>
 
@@ -300,6 +333,25 @@ var SUPABASE_KEY="sb_publishable_2D41bAtgqOqKxl0n80LBMg_3rKJDyDl";
     buildFilters();render();
   }
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",load);else load();
+})();
+</script>
+<script>
+(function(){
+  var root=document.documentElement,btn=document.getElementById("theme-toggle");
+  function apply(t){
+    root.setAttribute("data-theme",t);
+    if(!btn)return;
+    var label=t==="light"?"Switch to dark mode":"Switch to light mode";
+    btn.setAttribute("aria-label",label);btn.title=label;
+  }
+  apply(root.getAttribute("data-theme")==="light"?"light":"dark");
+  if(btn)btn.addEventListener("click",function(){
+    var next=root.getAttribute("data-theme")==="light"?"dark":"light";
+    apply(next);
+    try{localStorage.setItem("stm-theme",next)}catch(e){}
+  });
+  /* keep other open tabs in sync */
+  window.addEventListener("storage",function(e){if(e.key==="stm-theme")apply(e.newValue==="light"?"light":"dark")});
 })();
 </script>
 </body>
