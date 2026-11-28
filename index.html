@@ -42,6 +42,14 @@
 /* Supabase connection (the publishable key is safe to expose; Row Level Security protects the data) */
 var SUPABASE_URL="https://nzfegreqwluhjvqgncxw.supabase.co";
 var SUPABASE_KEY="sb_publishable_2D41bAtgqOqKxl0n80LBMg_3rKJDyDl";
+
+/* ===== EMAIL NOTIFICATION FOR NEW ORDERS (Web3Forms, free) =====
+   1. Get your free access key at https://web3forms.com (it is emailed to you).
+   2. Paste it between the quotes on the var WEB3FORMS_ACCESS_KEY line below, in place of the placeholder text.
+   Until you do, orders are still saved to Supabase, but no email is sent. */
+var WEB3FORMS_ACCESS_KEY="d74dd4d1-961b-4953-9b97-a782307ef5f2";
+var ORDER_EMAIL_SUBJECT="New Order Received — STM Kayes";
+
 var _sb=null;
 function getSupabase(){
   if(!_sb&&window.supabase&&window.supabase.createClient)_sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
@@ -235,6 +243,10 @@ html.view-hire .hire{display:block}
 .form-err{margin-top:22px;padding:12px 14px;border-radius:10px;background:rgba(255,143,133,.12);border:1px solid rgba(255,143,133,.45);color:#ffb4ac}
 .form-err a{color:#fff;font-weight:600}
 .hire button.btn:disabled{opacity:.65;cursor:wait}
+.hire button.btn.is-loading{position:relative;padding-left:48px}
+.hire button.btn.is-loading::before{content:"";position:absolute;left:22px;top:50%;width:16px;height:16px;margin-top:-8px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:btn-spin .7s linear infinite}
+@keyframes btn-spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.hire button.btn.is-loading::before{animation-duration:2.4s}}
 .hire .btn.primary{background:var(--h-accent);color:#08150f;border-color:var(--h-accent)}
 .hire .btn.ghost{color:var(--h-ink);border-color:rgba(255,255,255,.24)}
 .hire .btn.ghost:hover{border-color:var(--h-accent)}
@@ -894,8 +906,8 @@ html[data-theme="light"] .pm-social a:hover,html[data-theme="light"] .pm-social 
       </form>
       <div class="done" id="hire-done" tabindex="-1" aria-live="polite" hidden>
         <div class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
-        <h3>Thanks, <span id="done-name"></span>. Your request was sent.</h3>
-        <p>I’ve received your project details and will reply to <b id="done-email"></b> soon.</p>
+        <h3>Order Received!</h3>
+        <p>Thank you, <span id="done-name"></span>. I will contact you shortly at <b id="done-email"></b>.</p>
         <dl class="sum">
           <dt>Service</dt><dd id="done-service"></dd>
           <dt>Budget</dt><dd id="done-budget"></dd>
@@ -1234,18 +1246,55 @@ html[data-theme="light"] .pm-social a:hover,html[data-theme="light"] .pm-social 
     err.appendChild(a);err.appendChild(document.createTextNode("."));
     err.hidden=false;
   }
+  /* save the order in Supabase (shown in admin.html) */
+  async function saveOrder(row){
+    var c=getSupabase();if(!c)throw new Error("Supabase library did not load");
+    var res=await c.from("hire_requests").insert(row);
+    if(res.error)throw res.error;
+    return true;
+  }
+  /* email me about the order through Web3Forms. Returns null when no access key is set yet. */
+  async function emailOrder(o){
+    var key=(typeof WEB3FORMS_ACCESS_KEY==="string"?WEB3FORMS_ACCESS_KEY:"").trim();
+    if(!key||/PASTE_YOUR/i.test(key))return null;
+    var ctrl=window.AbortController?new AbortController():null;
+    var timer=setTimeout(function(){if(ctrl)ctrl.abort()},15000);
+    try{
+      var res=await fetch("https://api.web3forms.com/submit",{
+        method:"POST",
+        headers:{"Content-Type":"application/json",Accept:"application/json"},
+        signal:ctrl?ctrl.signal:undefined,
+        body:JSON.stringify({
+          access_key:key,
+          subject:(typeof ORDER_EMAIL_SUBJECT==="string"&&ORDER_EMAIL_SUBJECT)||"New Order Received",
+          from_name:"STM Kayes Website",
+          name:o.name,
+          email:o.email,
+          "Phone / WhatsApp":o.phone||"Not provided",
+          "Selected service":o.service,
+          "Estimated budget":o.budget,
+          message:o.details
+        })
+      });
+      var data={};try{data=await res.json()}catch(x){}
+      if(!res.ok||data.success===false)throw new Error(data.message||("HTTP "+res.status));
+      return true;
+    }finally{clearTimeout(timer)}
+  }
   form.addEventListener("submit",async function(e){
     e.preventDefault();err.hidden=true;
     var f=new FormData(form),name=val(f,"name"),email=val(f,"email"),service=val(f,"service"),amount=val(f,"amount"),cur=val(f,"currency"),details=val(f,"details");
-    var row={name:name,email:email,phone:val(f,"phone")||null,service:service,message:details,budget_amount:amount?Number(amount):null,budget_currency:amount?cur:null};
-    var label=btn.textContent;btn.disabled=true;btn.textContent="Sending…";
+    var phone=val(f,"phone"),budget=amount?(cur==="BDT"?"৳":"$")+amount+" ("+cur+")":"Not specified";
+    var row={name:name,email:email,phone:phone||null,service:service,message:details,budget_amount:amount?Number(amount):null,budget_currency:amount?cur:null};
+    var label=btn.textContent;btn.disabled=true;btn.classList.add("is-loading");btn.textContent="Sending…";
     try{
       if(!val(f,"website")){
-        var c=getSupabase();if(!c)throw new Error("Supabase library did not load");
-        var res=await c.from("hire_requests").insert(row);
-        if(res.error)throw res.error;
+        /* both run together; the order counts as received if it was saved OR emailed */
+        var results=await Promise.allSettled([saveOrder(row),emailOrder({name:name,email:email,phone:phone,service:service,budget:budget,details:details})]);
+        results.forEach(function(r,i){if(r.status==="rejected")console.error((i?"order email":"hire_requests insert")+" failed:",r.reason)});
+        var saved=results[0].status==="fulfilled",emailed=results[1].status==="fulfilled"&&results[1].value===true;
+        if(!saved&&!emailed)throw new Error("the order could not be saved or emailed");
       }
-      var budget=amount?(cur==="BDT"?"৳":"$")+amount+" ("+cur+")":"Not specified";
       document.getElementById("done-name").textContent=name;
       document.getElementById("done-email").textContent=email;
       document.getElementById("done-service").textContent=service;
@@ -1254,10 +1303,10 @@ html[data-theme="light"] .pm-social a:hover,html[data-theme="light"] .pm-social 
       window.scrollTo({top:0,behavior:"instant"});
       done.focus({preventScroll:true});
     }catch(x){
-      console.error("hire_requests insert failed:",x);
+      console.error("hire order failed:",x);
       fail(name,service,details,email);
     }finally{
-      btn.disabled=false;btn.textContent=label;
+      btn.disabled=false;btn.classList.remove("is-loading");btn.textContent=label;
     }
   });
 })();
