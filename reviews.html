@@ -100,6 +100,7 @@ a{color:inherit}
 .rv-sum,.review-card{transition:border-color .3s ease,box-shadow .3s ease,translate .3s ease}
 /* edit and delete your own review */
 .rc-tag{margin-left:8px;padding:2px 9px;border-radius:99px;background:var(--green-soft);color:var(--green);font-size:.72rem;font-weight:600;vertical-align:middle}
+.review-card.mine{border-color:color-mix(in srgb,var(--green) 55%,var(--line))}
 .rc-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:auto;padding-top:4px}
 .rc-btn{font:inherit;font-size:.85rem;font-weight:500;padding:5px 14px;border:1px solid var(--line);border-radius:999px;background:transparent;color:var(--muted);cursor:pointer;transition:all .25s ease}
 .rc-btn:hover{border-color:var(--green);color:var(--green)}
@@ -254,10 +255,11 @@ var SUPABASE_KEY="sb_publishable_2D41bAtgqOqKxl0n80LBMg_3rKJDyDl";
   function card(x,i,still){
     var a=el("article","review-card");a.style.setProperty("--i",i);a.dataset.id=x.id;
     if(still)a.style.animation="none";
+    if(isMine(x))a.classList.add("mine");
     var h=el("div","rc-head");
     var av=el("div","rc-av",(x.reviewer_name.trim().charAt(0)||"?").toUpperCase());av.setAttribute("aria-hidden","true");
     var nm=el("div","rc-name",x.reviewer_name);
-    if(isMine(x))nm.appendChild(el("span","rc-tag","Your review"));
+    if(isMine(x))nm.appendChild(el("span","rc-tag","You"));
     nm.appendChild(el("span","rc-date",when(x.created_at)));
     h.appendChild(av);h.appendChild(nm);
     a.appendChild(h);a.appendChild(stars(x.rating));a.appendChild(el("p",null,x.feedback));
@@ -372,10 +374,17 @@ var SUPABASE_KEY="sb_publishable_2D41bAtgqOqKxl0n80LBMg_3rKJDyDl";
       b.appendChild(row);
     }
   }
+  /* the visitor's own review goes first; everyone else stays newest-first */
+  function ordered(){
+    var m=mine();if(!m)return reviews;
+    var i=reviews.findIndex(function(r){return r.id===m.id});
+    if(i<1)return reviews;
+    var copy=reviews.slice(),own=copy.splice(i,1)[0];copy.unshift(own);return copy;
+  }
   function render(){
     list.replaceChildren();
     if(!reviews.length){list.appendChild(note("No reviews yet."));return}
-    reviews.slice(0,shown).forEach(function(x,i){list.appendChild(card(x,i%BATCH))});
+    ordered().slice(0,shown).forEach(function(x,i){list.appendChild(card(x,i%BATCH))});
     if(reviews.length>shown){
       var w=el("div","rv-more-wrap");
       var b=el("button","btn ghost","Load more reviews");b.type="button";

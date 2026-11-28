@@ -351,6 +351,9 @@ footer p{color:var(--muted);max-width:28em}
 .rc-head{display:flex;align-items:center;gap:12px}
 .rc-av{flex:none;width:42px;height:42px;border-radius:50%;background:var(--green-soft);color:var(--green);display:grid;place-items:center;font-family:var(--display);font-weight:800}
 .rc-name{font-weight:600}
+.review-card.mine{border-color:color-mix(in srgb,var(--green) 55%,var(--line))}
+.rc-manage{margin-top:auto;align-self:flex-start;color:var(--green);font-size:.88rem;font-weight:600;text-decoration:none}
+.rc-manage:hover{text-decoration:underline}
 .rc-tag{margin-left:6px;padding:2px 9px;border-radius:99px;background:var(--green-soft);color:var(--green);font-size:.75rem;font-weight:600}
 .review-card p{color:var(--muted);overflow-wrap:anywhere}
 .rv-form{padding:30px;margin-top:24px}
@@ -940,15 +943,20 @@ footer p{color:var(--muted);max-width:28em}
     return s;
   }
   function note(text){var d=document.createElement("div");d.className="rv-empty";d.textContent=text;return d}
+  /* the review this browser wrote (saved when it was submitted) */
+  function mineId(){try{var m=JSON.parse(localStorage.getItem("stm-my-review")||"null");return m&&m.id?m.id:null}catch(e){return null}}
   function card(x,isNew){
-    var a=document.createElement("article");a.className="review-card"+(isNew?" new":"");
+    var own=!!x.id&&x.id===mineId();
+    var a=document.createElement("article");a.className="review-card"+(isNew?" new":"")+(own?" mine":"");
     var h=document.createElement("div");h.className="rc-head";
     var av=document.createElement("div");av.className="rc-av";av.setAttribute("aria-hidden","true");
     av.textContent=(x.reviewer_name.trim().charAt(0)||"?").toUpperCase();
     var nm=document.createElement("div");nm.className="rc-name";nm.textContent=x.reviewer_name;
+    if(own){var tg=document.createElement("span");tg.className="rc-tag";tg.textContent="You";nm.appendChild(tg)}
     h.appendChild(av);h.appendChild(nm);
     var p=document.createElement("p");p.textContent=x.feedback;
     a.appendChild(h);a.appendChild(stars(x.rating));a.appendChild(p);
+    if(own){var mg=document.createElement("a");mg.className="rc-manage";mg.href="reviews.html";mg.textContent="Edit or delete";a.appendChild(mg)}
     return a;
   }
   function summary(){
@@ -965,10 +973,17 @@ footer p{color:var(--muted);max-width:28em}
       b.appendChild(row);
     }
   }
+  /* the visitor's own review goes first; everyone else stays newest-first */
+  function ordered(){
+    var id=mineId();if(!id)return reviews;
+    var i=reviews.findIndex(function(r){return r.id===id});
+    if(i<1)return reviews;
+    var copy=reviews.slice(),own=copy.splice(i,1)[0];copy.unshift(own);return copy;
+  }
   function render(newestIsNew){
     list.replaceChildren();
     if(!reviews.length){list.appendChild(note("No reviews yet. Be the first to leave one below."));return}
-    reviews.slice(0,LIMIT).forEach(function(x,i){list.appendChild(card(x,newestIsNew&&i===0))});
+    ordered().slice(0,LIMIT).forEach(function(x,i){list.appendChild(card(x,newestIsNew&&i===0))});
     if(reviews.length>LIMIT){
       var w=document.createElement("div");w.className="rv-more-wrap";
       var m=document.createElement("a");m.className="rv-dots";m.href="reviews.html";m.title="View all reviews";
@@ -1046,8 +1061,8 @@ footer p{color:var(--muted);max-width:28em}
         if(res.error)throw res.error;
         var row=Array.isArray(res.data)?res.data[0]:res.data;
         reviews.unshift({id:row.id,created_at:row.created_at,reviewer_name:row.reviewer_name,rating:row.rating,feedback:row.feedback});
-        render(true);summary();
         if(token)saveMine(row.id,token);
+        render(true);summary();
         remember();submittedNow=true;
       }
       document.getElementById("rv-who").textContent=name;
